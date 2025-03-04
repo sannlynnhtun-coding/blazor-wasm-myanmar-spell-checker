@@ -4,167 +4,261 @@
 @inject ApiKeyService ApiKeyService
 @inject NavigationManager Navigation
 @inject HttpClient Http
+@inject IJSRuntime JSRuntime
 
-@if (enumPage == EnumPage.FirstPage)
-{
-    <h3>API Key ထည့်သွင်းပါ</h3>
-    <input @bind="ApiKey" placeholder="API Key ထည့်သွင်းပါ" />
-    <button @onclick="SaveApiKey">သိမ်းဆည်းပြီးရှေ့သို့သွားမည်</button>
-}
-else if (enumPage == EnumPage.SecondPage)
-{
-    <h3>မြန်မာစာလုံးပေါင်းစစ်ဆေးခြင်း</h3>
-    <textarea @bind="InputText" rows="5" cols="40" placeholder="စာသားထည့်ပါ"></textarea>
-    <button @onclick="CheckSpelling">စစ်ဆေးမည်</button>
-    <p>ပြင်ဆင်ပြီးစာသား: @CorrectedText</p>
-    @if (!string.IsNullOrEmpty(Corrections))
-    {
-        <p>ပြင်ဆင်ခဲ့သည်များ: @Corrections</p>
-    }
-}
+<!-- Hero -->
+<div class="relative overflow-hidden">
+	<div class="max-w-[85rem] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-24">
+		<div class="text-center">
+			@if (enumPage == EnumPage.FirstPage)
+			{
+				<h1 class="mb-3 text-4xl sm:text-5xl font-bold text-gray-800 dark:text-neutral-200">
+					API Key ထည့်သွင်းပါ
+				</h1>
+				<p class="mt-3 text-gray-600 dark:text-neutral-400">
+					Gemini API ကိုအသုံးပြုရန် သင်၏ API Key ကိုထည့်ပါ။
+				</p>
+				<div class="mt-7 sm:mt-12 mx-auto max-w-xl relative">
+					<!-- Form -->
+					<div class="relative z-10 flex gap-x-3 p-3 bg-white border border-gray-200 rounded-lg shadow-lg shadow-gray-100 dark:bg-neutral-900 dark:border-neutral-700 dark:shadow-gray-900/20">
+						<div class="w-full">
+							<label for="api-key-input" class="block text-sm text-gray-700 font-medium dark:text-white">
+								<span class="sr-only">API Key ထည့်သွင်းပါ</span>
+							</label>
+							<input type="text" @bind="ApiKey" id="api-key-input"
+								   class="py-2.5 px-4 block w-full border-transparent rounded-lg focus:border-blue-500 focus:ring-blue-500 dark:bg-neutral-900 dark:border-transparent dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+								   placeholder="API Key ထည့်သွင်းပါ" />
+						</div>
+						<div>
+							<button @onclick="SaveApiKey"
+									class="size-11 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none">
+								<svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M5 12h14M12 5l7 7-7 7" />
+								</svg>
+							</button>
+						</div>
+					</div>
+					<!-- End Form -->
+				</div>
+			}
+			else if (enumPage == EnumPage.SecondPage)
+			{
+				<h1 class="text-4xl sm:text-5xl font-bold text-gray-800 dark:text-neutral-200">
+					မြန်မာစာလုံးပေါင်းစစ်ဆေးခြင်း
+				</h1>
+				<p class="mt-3 text-gray-600 dark:text-neutral-400">
+					သင်၏မြန်မာစာသားကို စစ်ဆေးပြီး ပြင်ဆင်ချက်များကိုကြည့်ပါ။
+				</p>
+				<div class="mt-7 sm:mt-12 mx-auto max-w-xl relative">
+					<!-- Form -->
+					<div class="relative z-10 flex flex-col gap-y-3 p-3 bg-white border border-gray-200 rounded-lg shadow-lg shadow-gray-100 dark:bg-neutral-900 dark:border-neutral-700 dark:shadow-gray-900/20">
+						<div class="w-full">
+							<label for="spell-check-input" class="block text-sm text-gray-700 font-medium dark:text-white">
+								<span class="sr-only">စာသားထည့်ပါ</span>
+							</label>
+							<textarea @bind="InputText" id="spell-check-input" rows="5"
+									  class="py-2.5 px-4 block w-full border-transparent rounded-lg focus:border-blue-500 focus:ring-blue-500 dark:bg-neutral-900 dark:border-transparent dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+									  placeholder="စာသားထည့်ပါ"></textarea>
+						</div>
+						<div class="flex justify-end">
+							<button @onclick="GoBack"
+									class="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-gray-800 text-gray-800 hover:border-gray-500 hover:text-gray-500 focus:outline-hidden focus:border-gray-500 focus:text-gray-500 disabled:opacity-50 disabled:pointer-events-none dark:border-white dark:text-white dark:hover:text-neutral-300 dark:hover:border-neutral-300">
+								နောက်သို့ပြန်သွားမည်
+								<svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M19 12H5" />
+									<path d="M12 19l-7-7 7-7" />
+								</svg>
+							</button>
+							<button @onclick="CheckSpelling"
+									class="inline-flex justify-center items-center gap-x-2 py-2.5 px-4 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none">
+								စစ်ဆေးမည်
+								<svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<circle cx="11" cy="11" r="8" />
+									<path d="m21 21-4.3-4.3" />
+								</svg>
+							</button>
+						</div>
+					</div>
+					<!-- End Form -->
+					<div class="mt-4 text-gray-700 dark:text-neutral-400">
+						<p>ပြင်ဆင်ပြီးစာသား:</p>
+						<code class="font-medium">@CorrectedText</code>
+						@if (!string.IsNullOrEmpty(Corrections))
+						{
+							<ul class="mt-2">
+								ပြင်ဆင်ခဲ့သည်များ:
+								@{
+									string[] strArr = Corrections.Split(',');
+									foreach (var str in strArr)
+									{
+										<li class="font-medium">@str</li>
+									}
+								}
+							</ul>
+						}
+					</div>
+				</div>
+			}
 
+			<!-- SVG Elements -->
+			<div class="hidden md:block absolute top-0 end-0 -translate-y-12 translate-x-20">
+				<svg class="w-16 h-auto text-orange-500" width="121" height="135" viewBox="0 0 121 135" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<path d="M5 16.4754C11.7688 27.4499 21.2452 57.3224 5 89.0164" stroke="currentColor" stroke-width="10" stroke-linecap="round" />
+					<path d="M33.6761 112.104C44.6984 98.1239 74.2618 57.6776 83.4821 5" stroke="currentColor" stroke-width="10" stroke-linecap="round" />
+					<path d="M50.5525 130C68.2064 127.495 110.731 117.541 116 78.0874" stroke="currentColor" stroke-width="10" stroke-linecap="round" />
+				</svg>
+			</div>
+			<div class="hidden md:block absolute bottom-0 start-0 translate-y-10 -translate-x-32">
+				<svg class="w-40 h-auto text-cyan-500" width="347" height="188" viewBox="0 0 347 188" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<path d="M4 82.4591C54.7956 92.8751 30.9771 162.782 68.2065 181.385C112.642 203.59 127.943 78.57 122.161 25.5053C120.504 2.2376 93.4028 -8.11128 89.7468 25.5053C85.8633 61.2125 130.186 199.678 180.982 146.248L214.898 107.02C224.322 95.4118 242.9 79.2851 258.6 107.02C274.299 134.754 299.315 125.589 309.861 117.539L343 93.4426" stroke="currentColor" stroke-width="7" stroke-linecap="round" />
+				</svg>
+			</div>
+			<!-- End SVG Elements -->
+		</div>
+	</div>
+</div>
+<!-- End Hero -->
 @code {
-    private string InputText { get; set; } = string.Empty;
-    private string CorrectedText { get; set; } = string.Empty;
-    private string Corrections { get; set; } = string.Empty;
-    private string ApiKey { get; set; } = string.Empty;
+	private string InputText { get; set; } = string.Empty;
+	private string CorrectedText { get; set; } = string.Empty;
+	private string Corrections { get; set; } = string.Empty;
+	private string ApiKey { get; set; } = string.Empty;
 
-    private EnumPage enumPage = EnumPage.FirstPage;
+	private EnumPage enumPage = EnumPage.FirstPage;
 
-    public enum EnumPage
-    {
-        FirstPage,
-        SecondPage
-    }
+	public enum EnumPage
+	{
+		FirstPage,
+		SecondPage
+	}
 
-    private void SaveApiKey()
-    {
-        if (!string.IsNullOrEmpty(ApiKey))
-        {
-            ApiKeyService.ApiKey = ApiKey;
-            enumPage = EnumPage.SecondPage;
-            StateHasChanged();
-        }
-    }
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			await JSRuntime.InvokeVoidAsync("initializePreline");
+		}
+	}
 
-    private async Task CheckSpelling()
-    {
-        if (string.IsNullOrEmpty(InputText))
-        {
-            CorrectedText = "ကျေးဇူးပြု၍ စာသားထည့်ပါ။";
-            Corrections = string.Empty;
-            StateHasChanged();
-            return;
-        }
+	private void SaveApiKey()
+	{
+		if (!string.IsNullOrEmpty(ApiKey))
+		{
+			ApiKeyService.ApiKey = ApiKey;
+			enumPage = EnumPage.SecondPage;
+			StateHasChanged();
+		}
+	}
 
-        try
-        {
-            var apiKey = ApiKeyService.ApiKey;
-            if (string.IsNullOrEmpty(apiKey))
-            {
-                CorrectedText = "API Key မရှိပါ။";
-                Corrections = string.Empty;
-                StateHasChanged();
-                return;
-            }
+	private void GoBack()
+	{
+		enumPage = EnumPage.FirstPage;
+		StateHasChanged();
+	}
 
-            // Gemini API endpoint
-            var requestUri = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
+	private async Task CheckSpelling()
+	{
+		if (string.IsNullOrEmpty(InputText))
+		{
+			CorrectedText = "ကျေးဇူးပြု၍ စာသားထည့်ပါ။";
+			Corrections = string.Empty;
+			StateHasChanged();
+			return;
+		}
 
-            // Updated prompt to request corrected text and list of fixes
-            var prompt = $"Correct the spelling of the following Myanmar text. Return the result in this format:\n" +
-                         $"Corrected: [corrected text here]\n" +
-                         $"Fixes: [list each correction as 'original -> corrected', separated by commas, or 'None' if no changes]\n\n" +
-                         $"Text: {InputText}";
+		try
+		{
+			var apiKey = ApiKeyService.ApiKey;
+			if (string.IsNullOrEmpty(apiKey))
+			{
+				CorrectedText = "API Key မရှိပါ။";
+				Corrections = string.Empty;
+				StateHasChanged();
+				return;
+			}
 
-            var requestBody = new
-            {
-                contents = new[]
-                {
-                    new { parts = new[] { new { text = prompt } } }
-                },
-                generationConfig = new
-                {
-                    temperature = 0.1, // Low temperature for precise output
-                    maxOutputTokens = 500 // Limit response length
-                }
-            };
+			var requestUri = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
+			var prompt = $"Correct the spelling of the following Myanmar text. Return the result in this format:\n" +
+							$"Corrected: [corrected text here]\n" +
+							$"Fixes: [list each correction as 'original -> corrected', separated by commas, or 'None' if no changes]\n\n" +
+							$"Text: {InputText}";
 
-            var response = await Http.PostAsJsonAsync(requestUri, requestBody);
+			var requestBody = new
+			{
+				contents = new[] { new { parts = new[] { new { text = prompt } } } },
+				generationConfig = new { temperature = 0.1, maxOutputTokens = 500 }
+			};
 
-            if (response.IsSuccessStatusCode)
-            {
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<GeminiResponse>(jsonResponse,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+			var response = await Http.PostAsJsonAsync(requestUri, requestBody);
 
-                var rawResponse = result?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text?.Trim() ?? InputText;
+			if (response.IsSuccessStatusCode)
+			{
+				var jsonResponse = await response.Content.ReadAsStringAsync();
+				var result = JsonSerializer.Deserialize<GeminiResponse>(jsonResponse,
+					new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-                // Parse the response to extract corrected text and fixes
-                CorrectedText = ExtractCorrectedText(rawResponse) ?? InputText;
-                Corrections = ExtractCorrections(rawResponse) ?? "မူရင်းနှင့် အတူတူဖြစ်သည်။";
-            }
-            else
-            {
-                CorrectedText = $"စစ်ဆေးရာတွင် အမှားတစ်ခုဖြစ်ပေါ်ခဲ့သည်။ (Error: {response.StatusCode})";
-                Corrections = string.Empty;
-            }
-        }
-        catch (Exception ex)
-        {
-            CorrectedText = $"အမှား: {ex.Message}";
-            Corrections = string.Empty;
-        }
-        finally
-        {
-            StateHasChanged();
-        }
-    }
+				var rawResponse = result?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text?.Trim() ?? InputText;
+				CorrectedText = ExtractCorrectedText(rawResponse) ?? InputText;
+				Corrections = ExtractCorrections(rawResponse) ?? "မူရင်းနှင့် အတူတူဖြစ်သည်။";
+			}
+			else
+			{
+				CorrectedText = $"စစ်ဆေးရာတွင် အမှားတစ်ခုဖြစ်ပေါ်ခဲ့သည်။ (Error: {response.StatusCode})";
+				Corrections = string.Empty;
+			}
+		}
+		catch (Exception ex)
+		{
+			CorrectedText = $"အမှား: {ex.Message}";
+			Corrections = string.Empty;
+		}
+		finally
+		{
+			StateHasChanged();
+		}
+	}
 
-    // Helper method to extract corrected text from Gemini response
-    private string ExtractCorrectedText(string response)
-    {
-        var correctedPrefix = "Corrected: ";
-        var startIndex = response.IndexOf(correctedPrefix);
-        if (startIndex == -1) return null;
+	private string ExtractCorrectedText(string response)
+	{
+		var correctedPrefix = "Corrected: ";
+		var startIndex = response.IndexOf(correctedPrefix);
+		if (startIndex == -1) return null;
 
-        startIndex += correctedPrefix.Length;
-        var endIndex = response.IndexOf("\n", startIndex);
-        if (endIndex == -1) endIndex = response.Length;
+		startIndex += correctedPrefix.Length;
+		var endIndex = response.IndexOf("\n", startIndex);
+		if (endIndex == -1) endIndex = response.Length;
 
-        return response.Substring(startIndex, endIndex - startIndex).Trim();
-    }
+		return response.Substring(startIndex, endIndex - startIndex).Trim();
+	}
 
-    // Helper method to extract list of corrections from Gemini response
-    private string ExtractCorrections(string response)
-    {
-        var fixesPrefix = "Fixes: ";
-        var startIndex = response.IndexOf(fixesPrefix);
-        if (startIndex == -1) return null;
+	private string ExtractCorrections(string response)
+	{
+		var fixesPrefix = "Fixes: ";
+		var startIndex = response.IndexOf(fixesPrefix);
+		if (startIndex == -1) return null;
 
-        startIndex += fixesPrefix.Length;
-        var corrections = response.Substring(startIndex).Trim();
-        return corrections == "None" ? "ပြင်ဆင်စရာမလိုပါ။" : corrections;
-    }
+		startIndex += fixesPrefix.Length;
+		var corrections = response.Substring(startIndex).Trim();
+		return corrections == "None" ? "ပြင်ဆင်စရာမလိုပါ။" : corrections;
+	}
 
-    // Models for Gemini API response
-    private class GeminiResponse
-    {
-        public Candidate[] Candidates { get; set; }
-    }
+	private class GeminiResponse
+	{
+		public Candidate[] Candidates { get; set; }
+	}
 
-    private class Candidate
-    {
-        public Content Content { get; set; }
-    }
+	private class Candidate
+	{
+		public Content Content { get; set; }
+	}
 
-    private class Content
-    {
-        public Part[] Parts { get; set; }
-    }
+	private class Content
+	{
+		public Part[] Parts { get; set; }
+	}
 
-    private class Part
-    {
-        public string Text { get; set; }
-    }
+	private class Part
+	{
+		public string Text { get; set; }
+	}
 }
