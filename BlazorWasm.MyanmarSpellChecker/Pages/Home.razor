@@ -1,7 +1,170 @@
 ﻿@page "/"
+@using System.Text.Json
+@using BlazorWasm.MyanmarSpellChecker.Models
+@inject ApiKeyService ApiKeyService
+@inject NavigationManager Navigation
+@inject HttpClient Http
 
-<PageTitle>Home</PageTitle>
+@if (enumPage == EnumPage.FirstPage)
+{
+    <h3>API Key ထည့်သွင်းပါ</h3>
+    <input @bind="ApiKey" placeholder="API Key ထည့်သွင်းပါ" />
+    <button @onclick="SaveApiKey">သိမ်းဆည်းပြီးရှေ့သို့သွားမည်</button>
+}
+else if (enumPage == EnumPage.SecondPage)
+{
+    <h3>မြန်မာစာလုံးပေါင်းစစ်ဆေးခြင်း</h3>
+    <textarea @bind="InputText" rows="5" cols="40" placeholder="စာသားထည့်ပါ"></textarea>
+    <button @onclick="CheckSpelling">စစ်ဆေးမည်</button>
+    <p>ပြင်ဆင်ပြီးစာသား: @CorrectedText</p>
+    @if (!string.IsNullOrEmpty(Corrections))
+    {
+        <p>ပြင်ဆင်ခဲ့သည်များ: @Corrections</p>
+    }
+}
 
-<h1>Hello, world!</h1>
+@code {
+    private string InputText { get; set; } = string.Empty;
+    private string CorrectedText { get; set; } = string.Empty;
+    private string Corrections { get; set; } = string.Empty;
+    private string ApiKey { get; set; } = string.Empty;
 
-Welcome to your new app.
+    private EnumPage enumPage = EnumPage.FirstPage;
+
+    public enum EnumPage
+    {
+        FirstPage,
+        SecondPage
+    }
+
+    private void SaveApiKey()
+    {
+        if (!string.IsNullOrEmpty(ApiKey))
+        {
+            ApiKeyService.ApiKey = ApiKey;
+            enumPage = EnumPage.SecondPage;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CheckSpelling()
+    {
+        if (string.IsNullOrEmpty(InputText))
+        {
+            CorrectedText = "ကျေးဇူးပြု၍ စာသားထည့်ပါ။";
+            Corrections = string.Empty;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var apiKey = ApiKeyService.ApiKey;
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                CorrectedText = "API Key မရှိပါ။";
+                Corrections = string.Empty;
+                StateHasChanged();
+                return;
+            }
+
+            // Gemini API endpoint
+            var requestUri = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
+
+            // Updated prompt to request corrected text and list of fixes
+            var prompt = $"Correct the spelling of the following Myanmar text. Return the result in this format:\n" +
+                         $"Corrected: [corrected text here]\n" +
+                         $"Fixes: [list each correction as 'original -> corrected', separated by commas, or 'None' if no changes]\n\n" +
+                         $"Text: {InputText}";
+
+            var requestBody = new
+            {
+                contents = new[]
+                {
+                    new { parts = new[] { new { text = prompt } } }
+                },
+                generationConfig = new
+                {
+                    temperature = 0.1, // Low temperature for precise output
+                    maxOutputTokens = 500 // Limit response length
+                }
+            };
+
+            var response = await Http.PostAsJsonAsync(requestUri, requestBody);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<GeminiResponse>(jsonResponse,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                var rawResponse = result?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text?.Trim() ?? InputText;
+
+                // Parse the response to extract corrected text and fixes
+                CorrectedText = ExtractCorrectedText(rawResponse) ?? InputText;
+                Corrections = ExtractCorrections(rawResponse) ?? "မူရင်းနှင့် အတူတူဖြစ်သည်။";
+            }
+            else
+            {
+                CorrectedText = $"စစ်ဆေးရာတွင် အမှားတစ်ခုဖြစ်ပေါ်ခဲ့သည်။ (Error: {response.StatusCode})";
+                Corrections = string.Empty;
+            }
+        }
+        catch (Exception ex)
+        {
+            CorrectedText = $"အမှား: {ex.Message}";
+            Corrections = string.Empty;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    // Helper method to extract corrected text from Gemini response
+    private string ExtractCorrectedText(string response)
+    {
+        var correctedPrefix = "Corrected: ";
+        var startIndex = response.IndexOf(correctedPrefix);
+        if (startIndex == -1) return null;
+
+        startIndex += correctedPrefix.Length;
+        var endIndex = response.IndexOf("\n", startIndex);
+        if (endIndex == -1) endIndex = response.Length;
+
+        return response.Substring(startIndex, endIndex - startIndex).Trim();
+    }
+
+    // Helper method to extract list of corrections from Gemini response
+    private string ExtractCorrections(string response)
+    {
+        var fixesPrefix = "Fixes: ";
+        var startIndex = response.IndexOf(fixesPrefix);
+        if (startIndex == -1) return null;
+
+        startIndex += fixesPrefix.Length;
+        var corrections = response.Substring(startIndex).Trim();
+        return corrections == "None" ? "ပြင်ဆင်စရာမလိုပါ။" : corrections;
+    }
+
+    // Models for Gemini API response
+    private class GeminiResponse
+    {
+        public Candidate[] Candidates { get; set; }
+    }
+
+    private class Candidate
+    {
+        public Content Content { get; set; }
+    }
+
+    private class Content
+    {
+        public Part[] Parts { get; set; }
+    }
+
+    private class Part
+    {
+        public string Text { get; set; }
+    }
+}
