@@ -1,11 +1,5 @@
 # Building a Myanmar Spell Checker with Blazor WebAssembly, .NET 8, and Preline Tailwind CSS
 
-In this tutorial, we'll walk through creating a Blazor WebAssembly application using .NET 8, integrating the Preline UI library (built on Tailwind CSS), and implementing a Myanmar (Burmese) spell checker powered by the Gemini API. By the end, you'll have a functional web app with a sleek UI that corrects Myanmar text spelling.
-
-Let’s dive in step by step!
-
----
-
 ## Step 1: Set Up Your Development Environment
 
 Before we start, ensure you have the following installed:
